@@ -1,0 +1,27 @@
+{
+  "name": "social-ai",
+  "version": "1.0.0",
+  "description": "AI-powered LinkedIn post generator",
+  "main": "server.js",
+  "scripts": {
+    "dev": "node -r dotenv/config server.js",
+    "build": "next build",
+    "start": "node -r dotenv/config server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.71.2",
+    "@slack/bolt": "^3.22.0",
+    "@slack/web-api": "^6.13.0",
+    "anthropic": "^0.0.0",
+    "axios": "^1.6.2",
+    "cheerio": "^1.0.0-rc.12",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "next": "^14.0.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  }
+}
