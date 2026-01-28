@@ -89,3 +89,6 @@ const post = data.post;
   await app.start();
   console.log('⚡ Slack bot connected!');
 })();
+// Keep Render happy with a port
+const http = require('http');
+http.createServer((req, res) => res.end('Bot running')).listen(process.env.PORT || 3000);
