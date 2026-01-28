@@ -11,6 +11,9 @@ dotenv.config({ path: ".env.local" });
 const app = express();
 app.use(express.json());
 app.use(express.static("public"));
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "index.html"));
+});
 
 const PORT = process.env.PORT || 3000;
 const MONGODB_URI = process.env.VERCEL_MONGO_MONGODB_URI;
