@@ -65,7 +65,12 @@ app.command('/suggest-post', async ({ ack, body, client: slackClient }) => {
       return;
     }
 
-    const post = await generateLinkedInPost(contentPool, getBrandVoiceExamples(), getMemory());
+    const response = await fetch('https://social-wizard-ivory.vercel.app/api/generate/post', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' }
+});
+const data = await response.json();
+const post = data.post;
     
     await slackClient.chat.postMessage({
       channel: body.channel_id,
