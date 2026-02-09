@@ -58,10 +58,12 @@ async function scrapeURL(url) {
 
 async function generateImage(postText) {
   try {
-    const brandPrompt = `Modern tech illustration, dark background #0F0F0F, purple and magenta gradient accents, minimal clean design, abstract geometric shapes, data visualization aesthetic, professional B2B SaaS style, no text, no people, subtle grid pattern, glowing purple highlights: ${postText.substring(0, 150)}`;
+    const brandPrompt = `Modern tech illustration, dark background, purple and magenta gradient accents, minimal clean design, abstract geometric shapes, data visualization aesthetic, professional B2B SaaS style, no text, no people, subtle grid pattern, glowing purple highlights: ${postText.substring(0, 150)}`;
+    
+    console.log("Generating image with prompt:", brandPrompt.substring(0, 100));
     
     const response = await axios.post(
-      "https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-dev",
+      "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-2-1",
       { inputs: brandPrompt },
       {
         headers: {
@@ -69,13 +71,17 @@ async function generateImage(postText) {
           "Content-Type": "application/json",
         },
         responseType: "arraybuffer",
+        timeout: 60000,
       }
     );
+    
+    console.log("Image response status:", response.status);
+    console.log("Image response size:", response.data.length);
     
     const base64 = Buffer.from(response.data).toString("base64");
     return `data:image/png;base64,${base64}`;
   } catch (error) {
-    console.error("Error generating image:", error.message);
+    console.error("Error generating image:", error.response?.status, error.response?.data?.toString() || error.message);
     return null;
   }
 }
