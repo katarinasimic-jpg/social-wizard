@@ -11,9 +11,6 @@ dotenv.config({ path: ".env.local" });
 const app = express();
 app.use(express.json());
 app.use(express.static("public"));
-app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "index.html"));
-});
 
 const PORT = process.env.PORT || 3000;
 const MONGODB_URI = process.env.VERCEL_MONGO_MONGODB_URI;
@@ -59,162 +56,55 @@ async function scrapeURL(url) {
   }
 }
 
-async function generateLinkedInPost(contentPool, brandVoiceExamples, memory) {
-  const selectedContent = contentPool[Math.floor(Math.random() * contentPool.length)];
-  const memoryContext = memory.length > 0 ? `\n\nImportant context:\n${memory.join('\n')}` : "";
-  const brandContext = brandVoiceExamples.length > 0 ? `\n\nExamples:\n${brandVoiceExamples.slice(0, 3).join('\n\n---\n\n')}` : "";
-
-  const prompt = `You are writing a LinkedIn post for Soma Toth, CEO of Recart.
-
-CRITICAL INSTRUCTION - READ CAREFULLY:
-- If content contains "The Result" or "The Conclusion" section: Use ONLY those sections to determine what's real
-- If content contains "Hypothesis" or "Methodology": These are context only, NOT results
-- NEVER infer results from hypothesis
-- Report numbers, percentages, and outcomes EXACTLY as stated
-- If something failed or was negative, say so clearly
-
-Your task: Write ONE compelling LinkedIn post about the main finding/result in this content.
-
-The post should:
-- Lead with the actual result or key finding
-- Explain WHY it matters
-- Be educational and actionable
-- Use Soma's voice
-- Be 100-250 words${brandContext}${memoryContext}
-
-Content:
-${selectedContent}
-
-Write the post. Report only what the content actually says.`;
-
-  const response = await client.messages.create({
-    model: "claude-opus-4-5-20251101",
-    max_tokens: 500,
-    messages: [{ role: "user", content: prompt }],
-  });
-
-  return response.content[0].text;
+async function generateImage(postText) {
+  try {
+    const response = await axios.post(
+      "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0",
+      { inputs: `Professional LinkedIn post illustration, business, marketing, minimal, modern: ${postText.substring(0, 200)}` },
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.HUGGINGFACE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        responseType: "arraybuffer",
+      }
+    );
+    
+    const base64 = Buffer.from(response.data).toString("base64");
+    return `data:image/png;base64,${base64}`;
+  } catch (error) {
+    console.error("Error generating image:", error.message);
+    return null;
+  }
 }
 
-app.get("/health", (req, res) => {
-  res.json({ status: "ok", timestamp: new Date().toISOString() });
-});
-
-app.post("/api/content/add", async (req, res) => {
-  const { type, content } = req.body;
-  if (!type || !content) {
-    return res.status(400).json({ error: "type and content required" });
+function getLengthGuide(length) {
+  switch(length) {
+    case 'short': return '50-100 words. Punchy and tight.';
+    case 'long': return '200-300 words. More depth and storytelling.';
+    default: return '100-200 words. Balanced.';
   }
-  try {
-    await db.collection("content").insertOne({ type, content, createdAt: new Date() });
-    res.json({ success: true, message: "Content added" });
-  } catch (error) {
-    res.status(500).json({ error: "Failed to add content" });
+}
+
+function getToneGuide(tone) {
+  switch(tone) {
+    case 'casual': return 'Casual and conversational, like texting a friend.';
+    case 'inspirational': return 'Inspirational and motivating, but not cheesy.';
+    case 'controversial': return 'Hot take, contrarian, challenge common beliefs. Be bold.';
+    default: return 'Data-driven but warm. Confident with vulnerability.';
   }
-});
+}
 
-app.post("/api/content/scrape-url", async (req, res) => {
-  const { url } = req.body;
-  if (!url) {
-    return res.status(400).json({ error: "url required" });
+async function generateLinkedInPost(contentPool, brandVoiceExamples, memory, options = {}) {
+  const { topic, length, tone } = options;
+  
+  let selectedContent;
+  if (topic) {
+    selectedContent = contentPool.find(c => c.toLowerCase().includes(topic.toLowerCase())) || contentPool[Math.floor(Math.random() * contentPool.length)];
+  } else {
+    selectedContent = contentPool[Math.floor(Math.random() * contentPool.length)];
   }
-  try {
-    const content = await scrapeURL(url);
-    await db.collection("content").insertOne({ type: "scraped", content, url, createdAt: new Date() });
-    res.json({ success: true, message: "Content scraped and added", preview: content.substring(0, 150) + "..." });
-  } catch (error) {
-    res.status(500).json({ error: "Failed to scrape URL: " + error.message });
-  }
-});
 
-app.post("/api/brand/add", async (req, res) => {
-  const { post } = req.body;
-  if (!post) {
-    return res.status(400).json({ error: "post content required" });
-  }
-  try {
-    await db.collection("brand").insertOne({ post, createdAt: new Date() });
-    res.json({ success: true, message: "Brand voice example added" });
-  } catch (error) {
-    res.status(500).json({ error: "Failed to add brand example" });
-  }
-});
-
-app.post("/api/memory/add", async (req, res) => {
-  const { note } = req.body;
-  if (!note) {
-    return res.status(400).json({ error: "note required" });
-  }
-  try {
-    await db.collection("memory").insertOne({ note, createdAt: new Date() });
-    res.json({ success: true, message: "Memory added" });
-  } catch (error) {
-    res.status(500).json({ error: "Failed to add memory" });
-  }
-});
-
-app.get("/api/content/list", async (req, res) => {
-  try {
-    const content = await db.collection("content").find({}).toArray();
-    res.json({ total: content.length, items: content });
-  } catch (error) {
-    res.status(500).json({ error: "Failed to retrieve content" });
-  }
-});
-
-app.get("/api/brand/list", async (req, res) => {
-  try {
-    const brand = await db.collection("brand").find({}).toArray();
-    res.json({ total: brand.length, items: brand });
-  } catch (error) {
-    res.status(500).json({ error: "Failed to retrieve brand examples" });
-  }
-});
-
-app.get("/api/memory/list", async (req, res) => {
-  try {
-    const memory = await db.collection("memory").find({}).toArray();
-    res.json({ total: memory.length, items: memory });
-  } catch (error) {
-    res.status(500).json({ error: "Failed to retrieve memory" });
-  }
-});
-
-app.post("/api/generate/post", async (req, res) => {
-  try {
-    const contentDocs = await db.collection("content").find({}).toArray();
-    const brandDocs = await db.collection("brand").find({}).toArray();
-    const memoryDocs = await db.collection("memory").find({}).toArray();
-
-    if (contentDocs.length === 0) {
-      return res.status(400).json({ error: "No content available" });
-    }
-
-    const contentPool = contentDocs.map(d => d.content);
-    const brandVoice = brandDocs.map(d => d.post);
-    const memory = memoryDocs.map(d => d.note);
-
-    const post = await generateLinkedInPost(contentPool, brandVoice, memory);
-
-    res.json({
-      success: true,
-      post,
-      contentUsed: contentPool.length,
-      brandExamples: brandVoice.length,
-      memoryNotes: memory.length,
-    });
-  } catch (error) {
-    console.error("Error generating post:", error);
-    res.status(500).json({ error: "Failed to generate post" });
-  }
-});
-
-connectDB().then(() => {
-  app.listen(PORT, () => {
-    console.log(`🚀 Server running on http://localhost:${PORT}`);
-    console.log(`📊 Dashboard: http://localhost:${PORT}/index.html`);
-  });
-}).catch(err => {
-  console.error("Failed to connect to MongoDB:", err);
-  process.exit(1);
-});
+  const memoryContext = memory.length > 0 ? `\n\nContext to remember:\n${memory.join('\n')}` : "";
+  const brandContext = brandVoiceExamples.length > 0 ? `\n\nSoma's real posts to match:\n${brandVoiceExamples.slice(0, 3).join('\n\n---\n\n')}` : "";
+  const length
