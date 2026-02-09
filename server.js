@@ -69,6 +69,7 @@ async function generateImage(postText) {
         headers: {
           Authorization: `Bearer ${process.env.HUGGINGFACE_API_KEY}`,
           "Content-Type": "application/json",
+          "Accept": "image/png",
         },
         responseType: "arraybuffer",
         timeout: 120000,
