@@ -63,7 +63,7 @@ async function generateImage(postText) {
     console.log("Generating image with prompt:", brandPrompt.substring(0, 100));
     
     const response = await axios.post(
-      "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-2-1",
+      "https://router.huggingface.co/hf-inference/models/stabilityai/stable-diffusion-2-1",
       { inputs: brandPrompt },
       {
         headers: {
