@@ -63,7 +63,7 @@ async function generateImage(postText) {
     console.log("Generating image with prompt:", brandPrompt.substring(0, 100));
     
     const response = await axios.post(
-      "https://router.huggingface.co/hf-inference/v1/models/black-forest-labs/FLUX.1-schnell",
+      "https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-schnell",
       { inputs: brandPrompt },
       {
         headers: {
@@ -71,7 +71,7 @@ async function generateImage(postText) {
           "Content-Type": "application/json",
         },
         responseType: "arraybuffer",
-        timeout: 60000,
+        timeout: 120000,
       }
     );
     
@@ -81,7 +81,7 @@ async function generateImage(postText) {
     const base64 = Buffer.from(response.data).toString("base64");
     return `data:image/png;base64,${base64}`;
   } catch (error) {
-    console.error("Error generating image:", error.response?.status, error.response?.data?.toString() || error.message);
+    console.error("Error generating image:", error.response?.status, error.response?.statusText, error.response?.data?.toString() || error.message);
     return null;
   }
 }
