@@ -60,7 +60,7 @@ async function scrapeURL(url) {
 
 async function generateImage(postText) {
   try {
-    const brandPrompt = `Abstract data visualization, dark navy background, glowing purple and magenta gradient, minimalist bar charts and line graphs as abstract shapes, flowing data streams, geometric patterns, professional tech aesthetic, NO TEXT NO WORDS NO LETTERS NO NUMBERS, clean modern composition, subtle grid, soft glow effects, business analytics vibe`;
+    const brandPrompt = `Abstract glowing lines on dark navy background, purple and magenta neon streaks flowing upward suggesting growth, minimal geometric shapes, soft bokeh lights, professional tech aesthetic, NO TEXT NO NUMBERS NO LETTERS NO WORDS, clean empty composition, futuristic ambient glow, simple and elegant`;
     
     // Generate background
     const response = await axios.post(
