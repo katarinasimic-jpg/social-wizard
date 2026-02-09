@@ -58,9 +58,11 @@ async function scrapeURL(url) {
 
 async function generateImage(postText) {
   try {
+    const brandPrompt = `Modern tech illustration, dark background #0F0F0F, purple and magenta gradient accents, minimal clean design, abstract geometric shapes, data visualization aesthetic, professional B2B SaaS style, no text, no people, subtle grid pattern, glowing purple highlights: ${postText.substring(0, 150)}`;
+    
     const response = await axios.post(
       "https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-dev",
-      { inputs: `Professional LinkedIn post illustration, business, marketing, minimal, modern, purple and blue gradient: ${postText.substring(0, 200)}` },
+      { inputs: brandPrompt },
       {
         headers: {
           Authorization: `Bearer ${process.env.HUGGINGFACE_API_KEY}`,
