@@ -60,7 +60,7 @@ async function generateImage(postText) {
   try {
     const response = await axios.post(
       "https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-dev",
-      { inputs: `Professional LinkedIn post illustration, business, marketing, minimal, modern: ${postText.substring(0, 200)}` },
+      { inputs: `Professional LinkedIn post illustration, business, marketing, minimal, modern, purple and blue gradient: ${postText.substring(0, 200)}` },
       {
         headers: {
           Authorization: `Bearer ${process.env.HUGGINGFACE_API_KEY}`,
@@ -80,9 +80,9 @@ async function generateImage(postText) {
 
 function getLengthGuide(length) {
   switch(length) {
-    case 'short': return '50-100 words. Punchy and tight.';
-    case 'long': return '200-300 words. More depth and storytelling.';
-    default: return '100-200 words. Balanced.';
+    case 'short': return 'STRICT: 50-100 words MAX. 5-7 sentences only. No lists. Super punchy.';
+    case 'long': return '200-300 words. More depth, storytelling, can include numbered lists.';
+    default: return '100-200 words. Balanced depth.';
   }
 }
 
@@ -141,7 +141,7 @@ SOMA'S UNIQUE VOICE - FOLLOW THIS CLOSELY:
 
 10. VISUAL BREAKS: Use ==== or line breaks for dramatic effect.
 
-LENGTH: ${lengthGuide}
+LENGTH REQUIREMENT (MUST FOLLOW): ${lengthGuide}
 TONE: ${toneGuide}${topicGuide}${brandContext}${memoryContext}
 
 CONTENT TO BASE THE POST ON:
@@ -151,6 +151,7 @@ CRITICAL:
 - Extract REAL results from the content. Never make up numbers.
 - If it failed, say it failed. Failures make great posts too.
 - Write like Soma texts a friend, not like a marketing blog.
+- STRICTLY follow the length requirement above.
 
 Write the post now. No preamble. Just the post.`;
 
