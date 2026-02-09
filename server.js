@@ -63,7 +63,7 @@ async function generateImage(postText) {
     console.log("Generating image with prompt:", brandPrompt.substring(0, 100));
     
     const response = await axios.post(
-      "https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-schnell",
+      "https://router.huggingface.co/hf-inference/models/black-forest-labs/FLUX.1-schnell",
       { inputs: brandPrompt },
       {
         headers: {
