@@ -5,6 +5,7 @@ const { MongoClient } = require("mongodb");
 const axios = require("axios");
 const cheerio = require("cheerio");
 const Anthropic = require("@anthropic-ai/sdk");
+const sharp = require("sharp");
 
 dotenv.config({ path: ".env.local" });
 
@@ -14,6 +15,7 @@ app.use(express.static("public"));
 
 const PORT = process.env.PORT || 3000;
 const MONGODB_URI = process.env.VERCEL_MONGO_MONGODB_URI;
+const RECART_LOGO_URL = "https://cdn.prod.website-files.com/60d04aaa36f3d293e9d817c2/66fa8131e6623468ee9f4881_recart-logo-black-bg.svg";
 
 let db;
 
@@ -58,10 +60,11 @@ async function scrapeURL(url) {
 
 async function generateImage(postText) {
   try {
-    const brandPrompt = `Modern tech illustration, dark background, purple and magenta gradient accents, minimal clean design, abstract geometric shapes, data visualization aesthetic, professional B2B SaaS style, no text, no people, subtle grid pattern, glowing purple highlights: ${postText.substring(0, 150)}`;
+    const brandPrompt = `Abstract digital art, dark navy background #0F0F1A, glowing purple and magenta gradient orbs, minimal geometric shapes, soft ambient lighting, professional tech aesthetic, NO TEXT NO WORDS NO LETTERS, clean simple composition, futuristic, subtle grid lines, bokeh light effects`;
     
-    console.log("Generating image with prompt:", brandPrompt.substring(0, 100));
+    console.log("Generating background image...");
     
+    // Generate background
     const response = await axios.post(
       "https://router.huggingface.co/hf-inference/models/black-forest-labs/FLUX.1-schnell",
       { inputs: brandPrompt },
@@ -76,13 +79,55 @@ async function generateImage(postText) {
       }
     );
     
-    console.log("Image response status:", response.status);
-    console.log("Image response size:", response.data.length);
+    console.log("Background generated, size:", response.data.length);
     
-    const base64 = Buffer.from(response.data).toString("base64");
+    // Download logo
+    console.log("Downloading logo...");
+    const logoResponse = await axios.get(RECART_LOGO_URL, {
+      responseType: "arraybuffer",
+    });
+    
+    // Get background dimensions
+    const backgroundBuffer = Buffer.from(response.data);
+    const backgroundMetadata = await sharp(backgroundBuffer).metadata();
+    const bgWidth = backgroundMetadata.width || 1024;
+    const bgHeight = backgroundMetadata.height || 1024;
+    
+    // Resize logo to fit nicely (about 30% of image width)
+    const logoWidth = Math.round(bgWidth * 0.3);
+    const logoBuffer = await sharp(Buffer.from(logoResponse.data))
+      .resize(logoWidth)
+      .png()
+      .toBuffer();
+    
+    // Get logo dimensions after resize
+    const logoMetadata = await sharp(logoBuffer).metadata();
+    const logoHeight = logoMetadata.height || 50;
+    
+    // Position logo in bottom right corner with padding
+    const padding = 40;
+    const logoX = bgWidth - logoWidth - padding;
+    const logoY = bgHeight - logoHeight - padding;
+    
+    // Composite logo on background
+    console.log("Compositing logo on background...");
+    const finalImage = await sharp(backgroundBuffer)
+      .composite([
+        {
+          input: logoBuffer,
+          left: logoX,
+          top: logoY,
+        }
+      ])
+      .png()
+      .toBuffer();
+    
+    console.log("Final image created, size:", finalImage.length);
+    
+    const base64 = finalImage.toString("base64");
     return `data:image/png;base64,${base64}`;
   } catch (error) {
-    console.error("Error generating image:", error.response?.status, error.response?.statusText, error.response?.data?.toString() || error.message);
+    console.error("Error generating image:", error.response?.status, error.response?.statusText, error.message);
     return null;
   }
 }
